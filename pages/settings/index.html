@@ -4,139 +4,19 @@
     <meta charset="utf-8" />
     <title>Omni-Draw Station</title>
     <link rel="stylesheet" href="./style.css" />
-</head>
-<body>
-    <div class="ambient-bg">
-        <div class="color-orb orb-1"></div>
-        <div class="color-orb orb-2"></div>
-        <div class="color-orb orb-3"></div>
-    </div>
-
-    <div class="layout-wrapper">
-        <aside class="sidebar glass-panel">
-            <div class="sidebar-header">
-                <div class="brand">
-                    <span class="brand-icon">✨</span>
-                    <h1>万象画卷</h1>
-                </div>
-                <div class="status-dot">SYSTEM_ONLINE</div>
-            </div>
-            
-            <nav class="nav-menu">
-                <div class="nav-label">GATEWAY</div>
-                <button class="nav-item active" data-target="tab-basic"><span>⚙️</span> 全局配置</button>
-                <div class="nav-label">CREATIVE</div>
-                <button class="nav-item" data-target="tab-persona"><span>🎭</span> 人设档案</button>
-                <button class="nav-item" data-target="tab-hub"><span>🔗</span> 生成调度</button>
-                <div class="nav-label">INTELLIGENCE</div>
-                <button class="nav-item" data-target="tab-optimizer"><span>🧠</span> 副脑引擎</button>
-                <button class="nav-item" data-target="tab-presets"><span>✨</span> 极速宏预设</button>
-                <div class="nav-label">INFRASTRUCTURE</div>
-                <button class="nav-item" data-target="tab-nodes"><span>🔌</span> 算力集群</button>
-            </nav>
-
-            <div class="save-panel">
-                <button data-action="save-config" class="btn-primary">保存全部更改</button>
-            </div>
-        </aside>
-
-        <main class="content">
-            <div id="tab-basic" class="tab-pane active">
-                <div class="page-header"><h2>全局配置</h2><p>管控系统访问权限与全局调试设定。</p></div>
-                <section class="card glass-card">
-                    <div class="form-group">
-                        <label>许可白名单 (QQ号)</label>
-                        <input type="text" id="perm_allowed_users" class="input-glass" placeholder="输入QQ号，逗号分隔。" />
-                    </div>
-                    <div class="divider"></div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <label style="margin-bottom: 4px; display: block; color: var(--text-main); font-size: 13px;">详细汇报模式 (Verbose)</label>
-                            <span style="font-size: 11px; color: var(--text-muted);">画图前输出最终提示词等调试信息。</span>
-                        </div>
-                        <div class="switch-wrapper"><input type="checkbox" id="verbose_report" class="ios-switch"></div>
-                    </div>
-                </section>
-            </div>
-
-            <div id="tab-persona" class="tab-pane">
-                <div class="page-header"><h2>人设档案</h2></div>
-                <div class="grid-row">
-                    <section class="card glass-card">
-                        <div class="form-group"><label>实体代号</label><input type="text" id="persona_name" class="input-glass" /></div>
-                        <div class="form-group"><label>底层特征序列</label><textarea id="persona_prompt" rows="5" class="input-glass"></textarea></div>
-                    </section>
-                    <section class="card glass-card">
-                        <div class="form-group">
-                            <label>参考图矩阵</label>
-                            <div class="multi-upload-container" id="persona-upload-container">
-                                <div class="upload-trigger glass-trigger" id="persona-upload-trigger">
-                                    <span class="upload-icon">+</span>
-                                    <span class="upload-text">添加图片</span>
-                                </div>
-                            </div>
-                            <input type="file" id="hidden-file-input" accept="image/*" multiple style="display: none;" />
-                        </div>
-                    </section>
-                </div>
-            </div>
-
-            <div id="tab-hub" class="tab-pane">
-                <div class="page-header"><h2>生成调度</h2></div>
-                <section class="card glass-card">
-                    <div class="form-group"><label>图生图负载指向</label><div class="node-selector" id="sel-route-img"></div><input type="hidden" id="route_img" /></div>
-                    <div class="divider"></div>
-                    <div class="form-group"><label>自拍拟态指向</label><div class="node-selector" id="sel-route-selfie"></div><input type="hidden" id="route_selfie" /></div>
-                    <div class="divider"></div>
-                    <div class="form-group"><label>视频渲染指向</label><div class="node-selector-video" id="sel-route-video"></div><input type="hidden" id="route_video" /></div>
-                </section>
-            </div>
-
-            <div id="tab-optimizer" class="tab-pane">
-                <div class="page-header"><h2>副脑引擎</h2></div>
-                <section class="card glass-card highlight-glass">
-                    <div class="card-header"><h3>Prompt Optimizer</h3><div class="switch-wrapper"><input type="checkbox" id="opt_enable" class="ios-switch"></div></div>
-                    <div class="grid-2-col">
-                        <div class="form-group"><label>画风协议</label><select id="opt_style" class="input-glass"><option value="手机日常原生感">手机日常原生感</option><option value="自拍专用极致真实">自拍专用极致真实</option><option value="电影级光影大片">电影级光影大片</option><option value="日系插画大师">日系插画大师</option><option value="3D 潮玩盲盒">3D 潮玩盲盒</option><option value="自定义模式">自定义模式</option></select></div>
-                        <div class="form-group"><label>处理节点</label><div class="node-selector" id="sel-opt-chain"></div><input type="hidden" id="opt_chain" /></div>
-                        <div class="form-group"><label>模型核心</label><input type="text" id="opt_model" class="input-glass" /></div>
-                        <div class="form-group"><label>超时限制</label><input type="number" id="opt_timeout" class="input-glass" /></div>
-                        <div class="form-group full-width"><label>并发上限</label><input type="number" id="opt_batch" class="input-glass" /></div>
-                        <div class="form-group full-width"><label>自定义注入</label><textarea id="opt_custom" rows="2" class="input-glass"></textarea></div>
-                    </div>
-                </section>
-            </div>
-
-            <div id="tab-presets" class="tab-pane">
-                <div class="page-header"><h2>极速宏预设</h2></div>
-                <section class="card glass-card">
-                    <div class="card-header space-between"><h3>已激活宏指令</h3><button data-action="add-preset" class="btn-glass-secondary btn-small">+ 添加指令</button></div>
-                    <div class="list-container" id="presets-container"></div>
-                </section>
-            </div>
-
-            <div id="tab-nodes" class="tab-pane">
-                <div class="page-header"><h2>算力集群</h2></div>
-                <section class="card glass-card">
-                    <div class="card-header space-between"><h3>图像算力节点</h3><button data-action="add-provider" class="btn-glass-secondary btn-small">+ 添加生图节点</button></div>
-                    <div class="list-container" id="providers-container"></div>
-                </section>
-                <section class="card glass-card">
-                    <div class="card-header space-between"><h3>视频渲染节点</h3><button data-action="add-video-provider" class="btn-glass-secondary btn-small">+ 添加视频节点</button></div>
-                    <div class="list-container" id="video-providers-container"></div>
-                </section>
-            </div>
-        </main>
-    </div>
-    <div id="toast-container"></div>
-    <script type="module" src="./app.js"></script>
-</body>
-</html><!doctype html>
-<html lang="zh-CN">
-<head>
-    <meta charset="utf-8" />
-    <title>Omni-Draw Station</title>
-    <link rel="stylesheet" href="./style.css" />
+    <style>
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; padding: 10px 0; }
+        .gallery-item { position: relative; border-radius: 12px; overflow: hidden; background: rgba(255, 255, 255, 0.3); border: 2px solid transparent; cursor: pointer; transition: all 0.3s; aspect-ratio: 1; }
+        .gallery-item:hover { transform: translateY(-5px); }
+        .gallery-item.selected { border-color: #006FEE; box-shadow: 0 0 15px rgba(0, 111, 238, 0.3); }
+        .gallery-img { width: 100%; height: 100%; object-fit: cover; }
+        .gallery-item::after { content: '✓'; position: absolute; top: 10px; right: 10px; width: 24px; height: 24px; background: #006FEE; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; opacity: 0; transition: 0.2s; transform: scale(0.5); }
+        .gallery-item.selected::after { opacity: 1; transform: scale(1); }
+        .gallery-info { position: absolute; bottom: 0; left: 0; width: 100%; padding: 8px; background: linear-gradient(transparent, rgba(0,0,0,0.6)); color: white; font-size: 11px; opacity: 0; transition: 0.3s; word-break: break-all; }
+        .gallery-item:hover .gallery-info { opacity: 1; }
+        .loading-hint { grid-column: 1 / -1; text-align: center; padding: 50px; color: #52525B; font-style: italic; }
+        .empty-gallery { grid-column: 1 / -1; text-align: center; padding: 100px; color: #52525B; font-size: 16px; }
+    </style>
 </head>
 <body>
     <div class="layout-wrapper">
@@ -155,7 +35,7 @@
                 <div class="nav-label">CREATIVE</div>
                 <button class="nav-item" data-target="tab-persona"><span>🎭</span> 人设档案</button>
                 <button class="nav-item" data-target="tab-hub"><span>🔗</span> 生成调度</button>
-                <div class="nav-label">INTELLIGENCE</div>
+                <button class="nav-item" data-target="tab-gallery"><span>🖼️</span> 生图图库</button> <div class="nav-label">INTELLIGENCE</div>
                 <button class="nav-item" data-target="tab-optimizer"><span>🧠</span> 副脑引擎</button>
                 <button class="nav-item" data-target="tab-presets"><span>✨</span> 极速宏预设</button>
                 <div class="nav-label">INFRASTRUCTURE</div>
@@ -205,6 +85,19 @@
                             <input type="file" id="hidden-file-input" accept="image/png, image/jpeg, image/webp" multiple style="display: none;" />
                         </div>
                     </section>
+                </div>
+            </div>
+
+            <div id="tab-gallery" class="tab-pane">
+                <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div><h2>生成图库</h2><p>本地所有通过万象画卷生成的图片归档 (存储于 temp_images)。</p></div>
+                    <div style="display: flex; gap: 12px; margin-bottom: 8px;">
+                        <button data-action="gallery-select-all" class="btn-secondary" style="padding: 8px 16px;">全选/反选</button>
+                        <button data-action="gallery-delete-selected" class="btn-primary" style="background: var(--danger); width: auto; padding: 8px 20px;">删除选中</button>
+                    </div>
+                </div>
+                <div class="gallery-grid" id="gallery-container">
+                    <div class="loading-hint">正在读取本地图库...</div>
                 </div>
             </div>
 
