@@ -11,6 +11,7 @@ import aiohttp
 import asyncio
 import re
 import json
+import shutil # ✨ 用于支持图片的本地化硬拷贝
 from typing import AsyncGenerator, Any
 
 from quart import jsonify, request
@@ -51,6 +52,10 @@ class OmniDrawPlugin(Star):
         self.data_dir = os.path.join(base_dir, "data", "plugin_data", "astrbot_plugin_omnidraw")
         os.makedirs(self.data_dir, exist_ok=True)
         
+        # ✨ 定义图库专属文件夹 temp_images
+        self.temp_images_dir = os.path.join(self.data_dir, "temp_images")
+        os.makedirs(self.temp_images_dir, exist_ok=True)
+        
         self.config_path = os.path.join(self.data_dir, "omnidraw_persist_config.json")
         
         if os.path.exists(self.config_path):
@@ -69,9 +74,52 @@ class OmniDrawPlugin(Star):
         self.video_manager = VideoManager(self.plugin_config)
         self.prompt_optimizer = PromptOptimizer(self.plugin_config) 
 
-        self.context.register_web_api("/astrbot_plugin_omnidraw/get_config", self.get_config_handler, ["GET"], "获取万象画卷配置")
-        self.context.register_web_api("/astrbot_plugin_omnidraw/save_config", self.save_config_handler, ["POST"], "保存万象画卷配置")
+        self.context.register_web_api("/astrbot_plugin_omnidraw/get_config", self.get_config_handler, ["GET"])
+        self.context.register_web_api("/astrbot_plugin_omnidraw/save_config", self.save_config_handler, ["POST"])
+        
+        # ✨ 注册图库读写 API 接口
+        self.context.register_web_api("/astrbot_plugin_omnidraw/get_gallery_list", self.get_gallery_list, ["GET"])
+        self.context.register_web_api("/astrbot_plugin_omnidraw/get_gallery_image", self.get_gallery_image, ["GET"])
+        self.context.register_web_api("/astrbot_plugin_omnidraw/delete_gallery_images", self.delete_gallery_images, ["POST"])
 
+    # ==========================================
+    # ✨ 图库后端处理器 
+    # ==========================================
+    async def get_gallery_list(self):
+        if not os.path.exists(self.temp_images_dir): return jsonify([])
+        files = [f for f in os.listdir(self.temp_images_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
+        # 按修改时间倒序排列，最新生成的排在最前面
+        files.sort(key=lambda x: os.path.getmtime(os.path.join(self.temp_images_dir, x)), reverse=True)
+        return jsonify(files[:300]) # 限制读取最新的300张，防卡死
+
+    async def get_gallery_image(self):
+        filename = request.args.get("filename")
+        path = os.path.join(self.temp_images_dir, filename)
+        if not os.path.exists(path): return jsonify({"error": "not found"})
+        try:
+            with open(path, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode("utf-8")
+                ext = filename.split('.')[-1]
+                return jsonify({"base64": f"data:image/{ext};base64,{b64}"})
+        except Exception as e:
+            return jsonify({"error": str(e)})
+
+    async def delete_gallery_images(self):
+        data = await request.get_json()
+        filenames = data.get("filenames", [])
+        count = 0
+        for f in filenames:
+            path = os.path.join(self.temp_images_dir, f)
+            if os.path.exists(path):
+                try:
+                    os.remove(path)
+                    count += 1
+                except: pass
+        return jsonify({"success": True, "count": count})
+
+    # ==========================================
+    # ⚙️ 核心流程接口 
+    # ==========================================
     async def get_config_handler(self):
         return jsonify(self.raw_config)
 
@@ -205,15 +253,33 @@ class OmniDrawPlugin(Star):
             return (match.group(1) or "").strip()
         return fallback.strip()
 
-    def _create_image_component(self, image_url: str) -> Image:
-        if image_url.startswith("data:image"):
-            b64_data = image_url.split(",", 1)[1]
-            save_dir = os.path.join(self.data_dir, "temp_images")
-            os.makedirs(save_dir, exist_ok=True)
-            file_path = os.path.join(save_dir, f"img_{uuid.uuid4().hex[:8]}.png")
-            with open(file_path, "wb") as f: f.write(base64.b64decode(b64_data))
-            return Image.fromFileSystem(file_path)
-        return Image.fromURL(image_url)
+    # ✨ 核心拦截升级为 async 函数：不论图片是链接还是 Base64，发送给用户前统统强行下载进入图库！
+    async def _create_image_component(self, image_url: str) -> Image:
+        filename = f"img_{int(time.time()*1000)}_{uuid.uuid4().hex[:4]}.png"
+        file_path = os.path.join(self.temp_images_dir, filename)
+
+        try:
+            if image_url.startswith("data:image"):
+                b64_data = image_url.split(",", 1)[1]
+                with open(file_path, "wb") as f: f.write(base64.b64decode(b64_data))
+                return Image.fromFileSystem(file_path)
+                
+            elif image_url.startswith("http"):
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(image_url, timeout=30) as r:
+                        if r.status == 200:
+                            with open(file_path, "wb") as f: f.write(await r.read())
+                            return Image.fromFileSystem(file_path)
+                            
+            elif os.path.exists(image_url):
+                shutil.copy(image_url, file_path)
+                return Image.fromFileSystem(file_path)
+                
+        except Exception as e:
+            logger.error(f"[OmniDraw] 保存图片至 temp_images 失败: {e}")
+            
+        # 如果下载失败，依然能降级处理，不影响用户收到图片
+        return Image.fromURL(image_url) if image_url.startswith("http") else Image.fromFileSystem(image_url)
 
     def _get_active_provider(self, chain_type: str = "text2img"):
         chain = self.plugin_config.chains.get(chain_type, [])
@@ -351,7 +417,8 @@ class OmniDrawPlugin(Star):
             async with aiohttp.ClientSession() as session:
                 chain_manager = ChainManager(self.plugin_config, session)
                 image_url = await chain_manager.run_chain("text2img", preset_prompt, user_refs=safe_refs)
-            yield event.chain_result([self._create_image_component(image_url)])
+            # ✨ 调用已升级的 async 拦截器
+            yield event.chain_result([await self._create_image_component(image_url)])
         except Exception as e:
             yield event.plain_result(f"💥 绘制失败: {e}")
 
@@ -379,7 +446,8 @@ class OmniDrawPlugin(Star):
         async with aiohttp.ClientSession() as session:
             chain_manager = ChainManager(self.plugin_config, session)
             image_url = await chain_manager.run_chain("text2img", prompt, **kwargs)
-        yield event.chain_result([self._create_image_component(image_url)])
+        # ✨ 调用已升级的 async 拦截器
+        yield event.chain_result([await self._create_image_component(image_url)])
 
     @filter.command("自拍")
     @handle_errors
@@ -395,7 +463,6 @@ class OmniDrawPlugin(Star):
         extra_kwargs.update(kwargs)
         param_count = len(kwargs)
         
-        # 🔴 调用本脚本专用列表字段，底层依然可以拿单数爽
         persona_ref = self.plugin_config.persona_ref_images
         raw_refs = self._get_event_images(event)
         target_refs = raw_refs if raw_refs else persona_ref
@@ -415,7 +482,8 @@ class OmniDrawPlugin(Star):
         async with aiohttp.ClientSession() as session:
             chain_manager = ChainManager(self.plugin_config, session)
             image_url = await chain_manager.run_chain(chain_to_use, final_prompt, **extra_kwargs)
-        yield event.chain_result([self._create_image_component(image_url)])
+        # ✨ 调用已升级的 async 拦截器
+        yield event.chain_result([await self._create_image_component(image_url)])
 
     @filter.command("视频")
     @handle_errors
@@ -436,7 +504,7 @@ class OmniDrawPlugin(Star):
         asyncio.create_task(self.video_manager.background_task_runner(event, prompt, safe_refs))
 
     # ==========================================
-    # 🤖 LLM 工具区 (参数一字不落，全部保留)
+    # 🤖 LLM 工具区 
     # ==========================================
     @llm_tool(name="generate_selfie")
     async def tool_generate_selfie(self, event: AstrMessageEvent, action: str, count: int = 1, aspect_ratio: str = "", size: str = "", extra_params: str = "") -> str:
@@ -454,7 +522,6 @@ class OmniDrawPlugin(Star):
             count = min(max(1, self._normalize_count(count)), self.plugin_config.max_batch_count or 10)
             optimized_actions = await self.prompt_optimizer.optimize(action, count)
             
-            # 🔴 调用本脚本专用的列表字段
             persona_ref = self.plugin_config.persona_ref_images
             
             raw_refs = self._get_event_images(event)
@@ -484,7 +551,8 @@ class OmniDrawPlugin(Star):
             valid_urls = [u for u in results if isinstance(u, str) and u]
             if not valid_urls: raise Exception("所有绘图节点请求失败")
             for url in valid_urls:
-                await event.send(event.chain_result([self._create_image_component(url)]))
+                # ✨ 调用已升级的 async 拦截器
+                await event.send(event.chain_result([await self._create_image_component(url)]))
                 await asyncio.sleep(0.5) 
             return f"系统提示：已成功生成并下发了 {len(valid_urls)} 张图。"
         except Exception as e:
@@ -523,7 +591,8 @@ class OmniDrawPlugin(Star):
             valid_urls = [u for u in results if isinstance(u, str) and u]
             if not valid_urls: raise Exception("所有绘图节点请求失败")
             for url in valid_urls:
-                await event.send(event.chain_result([self._create_image_component(url)]))
+                # ✨ 调用已升级的 async 拦截器
+                await event.send(event.chain_result([await self._create_image_component(url)]))
                 await asyncio.sleep(0.5) 
             return f"系统提示：已成功下发 {len(valid_urls)} 张图。"
         except Exception as e:
