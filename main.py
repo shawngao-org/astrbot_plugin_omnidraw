@@ -49,6 +49,7 @@ class OmniDrawPlugin(Star):
         super().__init__(context)
         
         base_dir = os.getcwd()
+        # ✨ 严格绑定你要求的路径：data\plugin_data\astrbot_plugin_omnidraw\temp_images
         self.data_dir = os.path.join(base_dir, "data", "plugin_data", "astrbot_plugin_omnidraw")
         os.makedirs(self.data_dir, exist_ok=True)
         
@@ -76,39 +77,48 @@ class OmniDrawPlugin(Star):
         self.context.register_web_api("/astrbot_plugin_omnidraw/get_config", self.get_config_handler, ["GET"], "获取配置")
         self.context.register_web_api("/astrbot_plugin_omnidraw/save_config", self.save_config_handler, ["POST"], "保存配置")
         
-        # ✨ 修复：全部采用安全且不会丢失参数的 POST 接口
+        # ✨ 强制使用 POST 避免 GET 丢参数
         self.context.register_web_api("/astrbot_plugin_omnidraw/get_gallery_list", self.get_gallery_list, ["POST"], "拉取图库列表")
         self.context.register_web_api("/astrbot_plugin_omnidraw/get_gallery_image", self.get_gallery_image, ["POST"], "加载单张图片")
         self.context.register_web_api("/astrbot_plugin_omnidraw/delete_gallery_images", self.delete_gallery_images, ["POST"], "批量删除图片")
 
     # ==========================================
-    # ✨ 生图图库后端接口 (全面升级为 POST 载荷读取)
+    # ✨ 生图图库后端接口 (深度容错解析)
     # ==========================================
     async def get_gallery_list(self):
         if not os.path.exists(self.temp_images_dir): return jsonify({"files": []})
         files = [f for f in os.listdir(self.temp_images_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
         files.sort(key=lambda x: os.path.getmtime(os.path.join(self.temp_images_dir, x)), reverse=True)
-        # 将数组包裹在 dict 中，彻底防止解析坍缩
         return jsonify({"files": files[:300]}) 
 
     async def get_gallery_image(self):
         try:
-            data = await request.get_json(silent=True) or {}
+            # 兼容多种数据载荷格式
+            raw_data = await request.get_data()
+            data = json.loads(raw_data.decode("utf-8")) if raw_data else {}
             filename = data.get("filename")
+            
             if not filename: return jsonify({"error": "missing filename"})
-            path = os.path.join(self.temp_images_dir, filename)
+            
+            path = os.path.join(self.temp_images_dir, os.path.basename(filename))
             if not os.path.exists(path): return jsonify({"error": "not found"})
+            
             with open(path, "rb") as f:
                 b64 = base64.b64encode(f.read()).decode("utf-8")
-                ext = filename.split('.')[-1]
+                ext = filename.split('.')[-1].lower()
+                if ext == 'jpg': ext = 'jpeg'
                 return jsonify({"base64": f"data:image/{ext};base64,{b64}"})
         except Exception as e:
+            logger.error(f"[OmniDraw] 读取单张图片异常: {e}")
             return jsonify({"error": str(e)})
 
     async def delete_gallery_images(self):
         try:
-            data = await request.get_json(silent=True) or {}
+            # 强制从 raw_data 解析 JSON，防止丢包
+            raw_data = await request.get_data()
+            data = json.loads(raw_data.decode("utf-8")) if raw_data else {}
             filenames = data.get("filenames", [])
+            
             if not filenames:
                 return jsonify({"success": False, "message": "未能识别要删除的文件"})
 
@@ -125,7 +135,7 @@ class OmniDrawPlugin(Star):
                         
             return jsonify({"success": True, "count": count})
         except Exception as e:
-            logger.error(f"[OmniDraw] JSON 解析失败: {e}")
+            logger.error(f"[OmniDraw] 图库删除 JSON 解析失败: {e}")
             return jsonify({"success": False, "message": str(e)})
 
     # ==========================================
@@ -146,6 +156,7 @@ class OmniDrawPlugin(Star):
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(self.raw_config, f, ensure_ascii=False, indent=4)
         except Exception as e:
+            logger.error(f"[OmniDraw] 配置文件持久化写入失败: {e}")
             return jsonify({"success": False, "message": f"硬盘写入失败: {e}"})
         
         if hasattr(self.context, 'update_config'):
@@ -417,7 +428,7 @@ class OmniDrawPlugin(Star):
         
         msg = f"{MessageEmoji.PAINTING} 收到灵感，正在绘制..."
         if self.plugin_config.verbose_report:
-            msg += f"\n📝 宏对应提示词: {preset_prompt}\n🖼️ 实际参考图：{len(safe_refs) if safe_refs else 0} 张"
+            msg += f"\n[调试] 宏对应提示词: {preset_prompt}\n[调试] 识别参考图: {len(safe_refs) if safe_refs else 0}张"
         yield event.plain_result(msg)
         
         try:
