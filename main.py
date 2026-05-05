@@ -15,7 +15,7 @@ import uuid
 from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional
 
 import aiohttp
-from quart import jsonify, request
+from quart import jsonify, request, send_file
 
 try:
     from astrbot.api.star import Context, Star, register
@@ -59,6 +59,7 @@ class OmniDrawPlugin(Star):
         os.makedirs(self.data_dir, exist_ok=True)
         self.config_path = os.path.join(self.data_dir, "omnidraw_persist_config.json")
         self._background_tasks = set()
+        self._page_image_tokens: Dict[str, str] = {}
 
         self.cmd_parser = CommandParser()
         self._apply_runtime_config(self._load_initial_config(config or {}))
@@ -74,6 +75,12 @@ class OmniDrawPlugin(Star):
             self.save_config_handler,
             ["POST"],
             "保存万象画卷配置",
+        )
+        self.context.register_web_api(
+            f"/{PLUGIN_NAME}/get_image",
+            self.get_image_handler,
+            ["GET"],
+            "获取万象画卷本地参考图预览",
         )
 
     def _resolve_data_dir(self) -> str:
@@ -118,6 +125,7 @@ class OmniDrawPlugin(Star):
         return jsonify(self._config_for_page())
 
     def _config_for_page(self) -> Dict[str, Any]:
+        self._page_image_tokens.clear()
         page_config = copy.deepcopy(self.raw_config)
         persona_config = page_config.get("persona_config")
         if not isinstance(persona_config, dict):
@@ -147,13 +155,28 @@ class OmniDrawPlugin(Star):
             return image_ref
         try:
             if os.path.getsize(image_ref) > MAX_IMAGE_BYTES:
-                return image_ref
+                return self._local_image_preview_url(image_ref)
             mime_type = mimetypes.guess_type(image_ref)[0] or "image/png"
             with open(image_ref, "rb") as file:
                 encoded = base64.b64encode(file.read()).decode("utf-8")
             return f"data:{mime_type};base64,{encoded}"
         except OSError:
             return image_ref
+
+    def _local_image_preview_url(self, image_ref: str) -> str:
+        abs_path = os.path.abspath(image_ref)
+        token = uuid.uuid5(uuid.NAMESPACE_URL, abs_path).hex
+        self._page_image_tokens[token] = abs_path
+        return f"/{PLUGIN_NAME}/get_image?token={token}"
+
+    async def get_image_handler(self):
+        token = str(request.args.get("token", "")).strip()
+        image_path = self._page_image_tokens.get(token)
+        if not image_path or not os.path.exists(image_path):
+            return jsonify({"success": False, "message": "参考图预览已失效，请刷新配置页。"}), 404
+
+        mime_type = mimetypes.guess_type(image_path)[0] or "image/png"
+        return await send_file(image_path, mimetype=mime_type)
 
     async def save_config_handler(self):
         new_config = await request.get_json(silent=True)
