@@ -6,64 +6,66 @@
     <link rel="stylesheet" href="./style.css" />
     <style>
         @media (max-width: 768px) {
-            /* 1. 布局重构为上下堆叠 */
-            .layout-wrapper { flex-direction: column !important; display: flex !important; height: 100vh !important; overflow: hidden !important; }
+            /* 1. 基础布局：改为上下垂直堆叠 */
+            body, html { overflow: hidden !important; }
+            .layout-wrapper { display: flex !important; flex-direction: column !important; height: 100vh !important; height: 100dvh !important; }
             
             /* 2. 侧边栏变身顶部导航 */
             .sidebar { 
-                width: 100% !important; height: auto !important; padding: 15px !important; flex-shrink: 0 !important; 
-                border-right: none !important; border-bottom: 1px solid rgba(0,0,0,0.1) !important; 
-                background: rgba(255, 255, 255, 0.85) !important; backdrop-filter: blur(15px) !important;
-                z-index: 100 !important; display: block !important; position: relative !important;
+                width: 100% !important; 
+                height: auto !important; 
+                padding: 15px 15px 5px 15px !important; 
+                flex-shrink: 0 !important;
+                border-right: none !important; 
+                border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+                z-index: 100 !important; 
             }
-            .sidebar-header { flex-direction: row !important; display: flex !important; justify-content: space-between !important; align-items: center !important; margin-bottom: 15px !important; }
-            .brand h1 { font-size: 20px !important; margin: 0 !important; }
-            .status-dot { margin-top: 0 !important; }
+            .sidebar-header { display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; margin-bottom: 10px !important; }
+            .brand h1 { font-size: 18px !important; margin: 0 !important; }
+            .status-dot { margin: 0 !important; }
             
-            /* 3. 导航栏横向滑动，隐藏无用的大写英文分类 */
-            .nav-menu { display: flex !important; flex-direction: row !important; overflow-x: auto !important; overflow-y: hidden !important; white-space: nowrap !important; gap: 8px !important; padding-bottom: 5px !important; margin-bottom: 5px !important; }
+            /* 3. 菜单改为横向滑动，隐藏英文标签节省空间 */
+            .nav-menu { display: flex !important; flex-direction: row !important; overflow-x: auto !important; white-space: nowrap !important; gap: 8px !important; padding-bottom: 10px !important; -webkit-overflow-scrolling: touch !important; }
             .nav-label { display: none !important; }
-            .nav-item { flex: 0 0 auto !important; width: auto !important; padding: 8px 16px !important; font-size: 14px !important; margin-bottom: 0 !important;}
+            .nav-item { width: auto !important; flex: 0 0 auto !important; padding: 8px 14px !important; margin: 0 !important; font-size: 13px !important; }
             
-            /* 4. 内容区域：底部流出悬浮按钮的空间 */
-            .content { flex: 1 !important; overflow-y: auto !important; padding: 20px 15px 120px 15px !important; }
-            .page-header { margin-bottom: 20px !important; }
-            .page-header h2 { font-size: 24px !important; margin-bottom: 6px !important; }
+            /* 4. 核心内容区：底部留出 100px 空隙，防止滚动到底部时被保存按钮遮挡 */
+            .content { flex: 1 !important; padding: 15px 15px 100px 15px !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
+            .page-header h2 { font-size: 22px !important; }
             
-            /* 5. 强制电脑端的两列网格变为单列，防止拥挤和黑边 */
+            /* 5. 修复输入框崩坏：强制双列变单列，宽度严格限制 100% */
             .grid-row, .grid-2-col { display: flex !important; flex-direction: column !important; gap: 15px !important; }
-            .card, .glass-card { padding: 20px !important; border-radius: 16px !important; margin-bottom: 20px !important; width: 100% !important; box-sizing: border-box !important;}
+            .card { padding: 15px !important; width: 100% !important; box-sizing: border-box !important; margin-bottom: 15px !important; }
+            .form-group { width: 100% !important; box-sizing: border-box !important; }
+            .input-modern, textarea, select { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; }
+            
+            /* 6. 算力集群等卡片的头部按钮防挤压 */
             .card-header.space-between { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
-            .card-header.space-between button { width: 100% !important; margin: 0 !important;}
+            .card-header.space-between button { width: 100% !important; }
             
-            /* 6. 输入框宽度限制 100%，解决撑破页面的 Bug */
-            .input-modern, .input-glass { width: 100% !important; box-sizing: border-box !important; }
-            .form-group { width: 100% !important; overflow: hidden !important; }
+            /* 7. 极速宏列表排版：从横向平铺改为纵向堆叠 */
+            .list-item { display: flex !important; flex-direction: column !important; gap: 10px !important; height: auto !important; padding: 15px !important; box-sizing: border-box !important; background: rgba(0,0,0,0.03) !important; border-radius: 12px !important;}
+            .list-item span { display: none !important; } /* 隐藏电脑端的箭头 */
+            .list-item button { width: 100% !important; margin-top: 5px !important; }
             
-            /* 7. 选项卡芯片自动换行排版 */
-            .chip-group, .node-selector, .node-selector-video { display: flex !important; flex-wrap: wrap !important; gap: 8px !important; }
-            .api-chip, .selector-chip { padding: 6px 14px !important; font-size: 13px !important; }
-            
-            /* 8. 极速宏预设：纵向排版更易点按 */
-            .list-item { display: flex !important; flex-direction: column !important; align-items: stretch !important; background: rgba(0,0,0,0.03) !important; padding: 15px !important; border-radius: 12px !important; gap: 10px !important; margin-bottom: 15px !important; width: 100% !important; box-sizing: border-box !important;}
-            .list-item input { width: 100% !important; background: rgba(255,255,255,0.5) !important; border-radius: 8px !important; padding: 10px !important; border: 1px solid rgba(0,0,0,0.1) !important;}
-            .list-item span { display: none !important; } /* 隐藏中间的箭头 */
-            .list-item button { align-self: flex-end !important; background: rgba(255,69,58,0.1) !important; color: #FF453A !important; padding: 8px 24px !important; border-radius: 8px !important; margin-top: 5px !important;}
-            
-            /* 9. 底部固定悬浮的保存大按钮 (修复重叠问题) */
+            /* 8. 修复按钮重叠：保存按钮作为独立图层悬浮在手机屏幕最底部 */
             .save-panel { 
-                position: fixed !important; bottom: 20px !important; left: 50% !important; transform: translateX(-50%) !important; 
-                width: calc(100% - 30px) !important; padding: 0 !important; margin: 0 !important; z-index: 1000 !important; 
+                position: fixed !important; 
+                bottom: 20px !important; 
+                left: 15px !important; 
+                right: 15px !important; 
+                width: auto !important; 
+                padding: 0 !important; 
+                margin: 0 !important; 
+                z-index: 9999 !important; 
             }
             .save-panel button { 
-                width: 100% !important; padding: 16px !important; font-size: 16px !important; font-weight: bold !important; 
-                border-radius: 16px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+                width: 100% !important; 
+                padding: 15px !important; 
+                border-radius: 12px !important; 
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important; 
+                font-size: 16px !important;
             }
-            
-            /* 10. 参考图上传框缩小排版 */
-            .multi-upload-container { display: flex !important; flex-wrap: wrap !important; gap: 10px !important; }
-            .upload-trigger { height: 80px !important; width: 80px !important; }
-            .image-preview { height: 80px !important; }
         }
     </style>
 </head>
