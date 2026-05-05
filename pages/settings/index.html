@@ -5,14 +5,15 @@
     <title>Omni-Draw Station</title>
     <link rel="stylesheet" href="./style.css" />
     <style>
-        .gallery-grid { column-count: 3; column-gap: 20px; padding: 10px 0; display: block; }
-        @media (max-width: 1200px) { .gallery-grid { column-count: 3; } }
-        @media (max-width: 900px) { .gallery-grid { column-count: 2; } }
-        @media (max-width: 600px) { .gallery-grid { column-count: 1; } }
-        .gallery-item { position: relative; border-radius: 12px; overflow: hidden; background: rgba(255, 255, 255, 0.3); border: 2px solid transparent; cursor: pointer; transition: all 0.3s; margin-bottom: 20px; break-inside: avoid; display: inline-block; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .gallery-item:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        .gallery-grid { column-count: 4; column-gap: 15px; padding: 10px 0; display: block; }
+        @media (max-width: 1400px) { .gallery-grid { column-count: 4; } }
+        @media (max-width: 1100px) { .gallery-grid { column-count: 3; } }
+        @media (max-width: 800px) { .gallery-grid { column-count: 2; } }
+        .gallery-item { position: relative; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.3); border: 2px solid transparent; cursor: pointer; transition: all 0.3s; margin-bottom: 15px; break-inside: avoid; display: block; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .gallery-item:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
         .gallery-item.selected { border-color: #006FEE; box-shadow: 0 0 15px rgba(0, 111, 238, 0.3); }
-        .gallery-img { width: 100%; height: auto; display: block; object-fit: contain; }
+        /* 关键修复：height: auto 完美保留原图比例 */
+        .gallery-img { width: 100%; height: auto; display: block; }
         .gallery-item::after { content: '✓'; position: absolute; top: 10px; right: 10px; width: 24px; height: 24px; background: #006FEE; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; opacity: 0; transition: 0.2s; transform: scale(0.5); }
         .gallery-item.selected::after { opacity: 1; transform: scale(1); }
         .gallery-info { position: absolute; bottom: 0; left: 0; width: 100%; padding: 12px 8px; background: linear-gradient(transparent, rgba(0,0,0,0.7)); color: white; font-size: 11px; opacity: 0; transition: 0.3s; word-break: break-all; pointer-events: none; }
@@ -44,7 +45,8 @@
                 <div class="nav-label">CREATIVE</div>
                 <button class="nav-item" data-target="tab-persona"><span>🎭</span> 人设档案</button>
                 <button class="nav-item" data-target="tab-hub"><span>🔗</span> 生成调度</button>
-                <button class="nav-item" data-target="tab-gallery"><span>🖼️</span> 生图图库</button> <div class="nav-label">INTELLIGENCE</div>
+                <button class="nav-item" data-target="tab-gallery"><span>🖼️</span> 生图图库</button>
+                <div class="nav-label">INTELLIGENCE</div>
                 <button class="nav-item" data-target="tab-optimizer"><span>🧠</span> 副脑引擎</button>
                 <button class="nav-item" data-target="tab-presets"><span>✨</span> 极速宏预设</button>
                 <div class="nav-label">INFRASTRUCTURE</div>
@@ -101,7 +103,7 @@
                 <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
                     <div><h2>生成图库</h2><p>本地所有通过万象画卷生成的图片归档 (temp_images)。</p></div>
                     <div style="display: flex; gap: 12px; margin-bottom: 8px;">
-                        <button data-action="gallery-select-all" class="btn-glass-secondary">全选/反选</button>
+                        <button data-action="gallery-select-all" class="btn-glass-secondary">全选 / 反选</button>
                         <button data-action="gallery-delete-selected" class="btn-primary" style="background: var(--danger); width: auto; padding: 8px 20px;">删除选中</button>
                     </div>
                 </div>
