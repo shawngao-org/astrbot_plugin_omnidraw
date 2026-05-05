@@ -4,139 +4,138 @@
     <meta charset="utf-8" />
     <title>Omni-Draw Station</title>
     <link rel="stylesheet" href="./style.css" />
-</head>
-<body>
-    <div class="ambient-bg">
-        <div class="color-orb orb-1"></div>
-        <div class="color-orb orb-2"></div>
-        <div class="color-orb orb-3"></div>
-    </div>
-
-    <div class="layout-wrapper">
-        <aside class="sidebar glass-panel">
-            <div class="sidebar-header">
-                <div class="brand">
-                    <span class="brand-icon">✨</span>
-                    <h1>万象画卷</h1>
-                </div>
-                <div class="status-dot">SYSTEM_ONLINE</div>
-            </div>
+    <style>
+        @media screen and (max-width: 768px) {
+            /* 基础布局：变为上下结构，确保不会左右溢出 */
+            .layout-wrapper { 
+                flex-direction: column !important; 
+                height: 100vh !important; 
+                display: flex !important;
+                overflow: hidden !important; 
+            }
             
-            <nav class="nav-menu">
-                <div class="nav-label">GATEWAY</div>
-                <button class="nav-item active" data-target="tab-basic"><span>⚙️</span> 全局配置</button>
-                <div class="nav-label">CREATIVE</div>
-                <button class="nav-item" data-target="tab-persona"><span>🎭</span> 人设档案</button>
-                <button class="nav-item" data-target="tab-hub"><span>🔗</span> 生成调度</button>
-                <div class="nav-label">INTELLIGENCE</div>
-                <button class="nav-item" data-target="tab-optimizer"><span>🧠</span> 副脑引擎</button>
-                <button class="nav-item" data-target="tab-presets"><span>✨</span> 极速宏预设</button>
-                <div class="nav-label">INFRASTRUCTURE</div>
-                <button class="nav-item" data-target="tab-nodes"><span>🔌</span> 算力集群</button>
-            </nav>
+            /* 侧边栏：移动到顶部，作为固定的导航区域 */
+            .sidebar { 
+                width: 100% !important; 
+                height: auto !important; 
+                padding: 15px 15px 5px 15px !important; 
+                flex-shrink: 0 !important;
+                border-right: none !important; 
+                border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+                z-index: 100 !important; 
+                background: rgba(255, 255, 255, 0.9) !important;
+                backdrop-filter: blur(10px) !important;
+            }
 
-            <div class="save-panel">
-                <button data-action="save-config" class="btn-primary">保存全部更改</button>
-            </div>
-        </aside>
-
-        <main class="content">
-            <div id="tab-basic" class="tab-pane active">
-                <div class="page-header"><h2>全局配置</h2><p>管控系统访问权限与全局调试设定。</p></div>
-                <section class="card glass-card">
-                    <div class="form-group">
-                        <label>许可白名单 (QQ号)</label>
-                        <input type="text" id="perm_allowed_users" class="input-glass" placeholder="输入QQ号，逗号分隔。" />
-                    </div>
-                    <div class="divider"></div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <label style="margin-bottom: 4px; display: block; color: var(--text-main); font-size: 13px;">详细汇报模式 (Verbose)</label>
-                            <span style="font-size: 11px; color: var(--text-muted);">画图前输出最终提示词等调试信息。</span>
-                        </div>
-                        <div class="switch-wrapper"><input type="checkbox" id="verbose_report" class="ios-switch"></div>
-                    </div>
-                </section>
-            </div>
-
-            <div id="tab-persona" class="tab-pane">
-                <div class="page-header"><h2>人设档案</h2></div>
-                <div class="grid-row">
-                    <section class="card glass-card">
-                        <div class="form-group"><label>实体代号</label><input type="text" id="persona_name" class="input-glass" /></div>
-                        <div class="form-group"><label>底层特征序列</label><textarea id="persona_prompt" rows="5" class="input-glass"></textarea></div>
-                    </section>
-                    <section class="card glass-card">
-                        <div class="form-group">
-                            <label>参考图矩阵</label>
-                            <div class="multi-upload-container" id="persona-upload-container">
-                                <div class="upload-trigger glass-trigger" id="persona-upload-trigger">
-                                    <span class="upload-icon">+</span>
-                                    <span class="upload-text">添加图片</span>
-                                </div>
-                            </div>
-                            <input type="file" id="hidden-file-input" accept="image/*" multiple style="display: none;" />
-                        </div>
-                    </section>
-                </div>
-            </div>
-
-            <div id="tab-hub" class="tab-pane">
-                <div class="page-header"><h2>生成调度</h2></div>
-                <section class="card glass-card">
-                    <div class="form-group"><label>图生图负载指向</label><div class="node-selector" id="sel-route-img"></div><input type="hidden" id="route_img" /></div>
-                    <div class="divider"></div>
-                    <div class="form-group"><label>自拍拟态指向</label><div class="node-selector" id="sel-route-selfie"></div><input type="hidden" id="route_selfie" /></div>
-                    <div class="divider"></div>
-                    <div class="form-group"><label>视频渲染指向</label><div class="node-selector-video" id="sel-route-video"></div><input type="hidden" id="route_video" /></div>
-                </section>
-            </div>
-
-            <div id="tab-optimizer" class="tab-pane">
-                <div class="page-header"><h2>副脑引擎</h2></div>
-                <section class="card glass-card highlight-glass">
-                    <div class="card-header"><h3>Prompt Optimizer</h3><div class="switch-wrapper"><input type="checkbox" id="opt_enable" class="ios-switch"></div></div>
-                    <div class="grid-2-col">
-                        <div class="form-group"><label>画风协议</label><select id="opt_style" class="input-glass"><option value="手机日常原生感">手机日常原生感</option><option value="自拍专用极致真实">自拍专用极致真实</option><option value="电影级光影大片">电影级光影大片</option><option value="日系插画大师">日系插画大师</option><option value="3D 潮玩盲盒">3D 潮玩盲盒</option><option value="自定义模式">自定义模式</option></select></div>
-                        <div class="form-group"><label>处理节点</label><div class="node-selector" id="sel-opt-chain"></div><input type="hidden" id="opt_chain" /></div>
-                        <div class="form-group"><label>模型核心</label><input type="text" id="opt_model" class="input-glass" /></div>
-                        <div class="form-group"><label>超时限制</label><input type="number" id="opt_timeout" class="input-glass" /></div>
-                        <div class="form-group full-width"><label>并发上限</label><input type="number" id="opt_batch" class="input-glass" /></div>
-                        <div class="form-group full-width"><label>自定义注入</label><textarea id="opt_custom" rows="2" class="input-glass"></textarea></div>
-                    </div>
-                </section>
-            </div>
-
-            <div id="tab-presets" class="tab-pane">
-                <div class="page-header"><h2>极速宏预设</h2></div>
-                <section class="card glass-card">
-                    <div class="card-header space-between"><h3>已激活宏指令</h3><button data-action="add-preset" class="btn-glass-secondary btn-small">+ 添加指令</button></div>
-                    <div class="list-container" id="presets-container"></div>
-                </section>
-            </div>
-
-            <div id="tab-nodes" class="tab-pane">
-                <div class="page-header"><h2>算力集群</h2></div>
-                <section class="card glass-card">
-                    <div class="card-header space-between"><h3>图像算力节点</h3><button data-action="add-provider" class="btn-glass-secondary btn-small">+ 添加生图节点</button></div>
-                    <div class="list-container" id="providers-container"></div>
-                </section>
-                <section class="card glass-card">
-                    <div class="card-header space-between"><h3>视频渲染节点</h3><button data-action="add-video-provider" class="btn-glass-secondary btn-small">+ 添加视频节点</button></div>
-                    <div class="list-container" id="video-providers-container"></div>
-                </section>
-            </div>
-        </main>
-    </div>
-    <div id="toast-container"></div>
-    <script type="module" src="./app.js"></script>
-</body>
-</html><!doctype html>
-<html lang="zh-CN">
-<head>
-    <meta charset="utf-8" />
-    <title>Omni-Draw Station</title>
-    <link rel="stylesheet" href="./style.css" />
+            .sidebar-header { 
+                display: flex !important; 
+                flex-direction: row !important; 
+                justify-content: space-between !important; 
+                align-items: center !important; 
+                margin-bottom: 10px !important; 
+            }
+            
+            .brand h1 { font-size: 20px !important; margin: 0 !important; }
+            .status-dot { margin: 0 !important; }
+            
+            /* 导航菜单：横向排列，允许滑动，隐藏多余文本 */
+            .nav-menu { 
+                display: flex !important; 
+                flex-direction: row !important; 
+                overflow-x: auto !important; 
+                white-space: nowrap !important; 
+                gap: 8px !important; 
+                padding-bottom: 5px !important; 
+                -webkit-overflow-scrolling: touch !important; 
+            }
+            .nav-menu::-webkit-scrollbar { display: none !important; } /* 隐藏滚动条 */
+            .nav-label { display: none !important; } /* 隐藏英文分类标签 */
+            .nav-item { 
+                width: auto !important; 
+                flex: 0 0 auto !important; 
+                padding: 8px 14px !important; 
+                margin: 0 !important; 
+                font-size: 14px !important; 
+            }
+            
+            /* 主内容区：底部预留充足空间，避免被悬浮按钮遮挡 */
+            .content { 
+                flex: 1 !important; 
+                padding: 15px 15px 120px 15px !important; /* 关键：底部留出 120px 给保存按钮 */
+                overflow-y: auto !important; 
+                -webkit-overflow-scrolling: touch !important; 
+            }
+            
+            .page-header h2 { font-size: 22px !important; }
+            
+            /* 网格布局：强制双列变单列，防止内容挤压 */
+            .grid-row, .grid-2-col { 
+                display: flex !important; 
+                flex-direction: column !important; 
+                gap: 15px !important; 
+            }
+            
+            /* 卡片与表单：宽度撑满，防溢出 */
+            .card { 
+                padding: 15px !important; 
+                width: 100% !important; 
+                box-sizing: border-box !important; 
+                margin-bottom: 15px !important; 
+            }
+            .form-group { width: 100% !important; box-sizing: border-box !important; }
+            
+            /* 输入框：强制 100% 宽度，修复错位与溢出 */
+            .input-modern, .input-glass, textarea, select { 
+                width: 100% !important; 
+                max-width: 100% !important; 
+                box-sizing: border-box !important; 
+            }
+            
+            /* 复杂头部：纵向排列按钮 */
+            .card-header.space-between { 
+                flex-direction: column !important; 
+                align-items: flex-start !important; 
+                gap: 10px !important; 
+            }
+            .card-header.space-between button { width: 100% !important; }
+            
+            /* 列表项（如极速宏）：纵向排版更易点按 */
+            .list-item { 
+                display: flex !important; 
+                flex-direction: column !important; 
+                gap: 10px !important; 
+                height: auto !important; 
+                padding: 15px !important; 
+                box-sizing: border-box !important; 
+                background: rgba(0,0,0,0.03) !important; 
+                border-radius: 12px !important;
+            }
+            .list-item span { display: none !important; } /* 隐藏间隔箭头 */
+            .list-item button { width: 100% !important; margin-top: 5px !important; }
+            
+            /* 悬浮保存按钮：固定在屏幕最底部，并添加背景阴影突出 */
+            .save-panel { 
+                position: fixed !important; 
+                bottom: 20px !important; 
+                left: 15px !important; 
+                right: 15px !important; 
+                width: auto !important; 
+                padding: 0 !important; 
+                margin: 0 !important; 
+                z-index: 9999 !important; 
+            }
+            .save-panel button { 
+                width: 100% !important; 
+                padding: 16px !important; 
+                border-radius: 12px !important; 
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important; 
+                font-size: 16px !important;
+            }
+            
+            /* 其他微调：图片容器自适应 */
+            .multi-upload-container { display: flex !important; flex-wrap: wrap !important; gap: 10px !important; }
+        }
+    </style>
 </head>
 <body>
     <div class="layout-wrapper">
