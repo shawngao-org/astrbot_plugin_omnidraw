@@ -81,7 +81,7 @@ class OmniDrawPlugin(Star):
         self.context.register_web_api("/astrbot_plugin_omnidraw/delete_gallery_images", self.delete_gallery_images, ["POST"], "批量删除图片")
 
     # ==========================================
-    # ✨ 生图图库后端接口
+    # ✨ 生图图库后端接口 (极度暴力防吞包)
     # ==========================================
     async def get_gallery_list(self):
         if not os.path.exists(self.temp_images_dir): return jsonify({"files": []})
@@ -91,8 +91,10 @@ class OmniDrawPlugin(Star):
 
     async def get_gallery_image(self):
         try:
-            data = await request.get_json(silent=True) or {}
+            raw_data = await request.get_data()
+            data = json.loads(raw_data.decode("utf-8")) if raw_data else {}
             filename = data.get("filename")
+            
             if not filename: return jsonify({"error": "missing filename"})
             
             path = os.path.join(self.temp_images_dir, os.path.basename(filename))
@@ -107,22 +109,26 @@ class OmniDrawPlugin(Star):
             return jsonify({"error": str(e)})
 
     async def delete_gallery_images(self):
-        # ✨ 终极绝杀解析：无论前端发什么，我们只要字符串！防吞包！
+        # ✨ 终极绝杀：强行生啃 JSON，绝不漏掉一个文件名
         try:
-            raw_data = await request.get_data()
-            if raw_data:
-                data = json.loads(raw_data.decode("utf-8"))
-            else:
-                data = await request.get_json(silent=True) or {}
+            # 兼容 Quart 不认 json header 的问题
+            data = await request.get_json(silent=True)
+            if data is None:
+                raw_data = await request.get_data()
+                data = json.loads(raw_data.decode("utf-8")) if raw_data else {}
         except Exception as e:
+            logger.error(f"[OmniDraw] JSON 负载解析失败: {e}")
             data = {}
 
-        # 接收前端传来的纯字符串，比如 "img1.png,img2.png"
+        # 优先读取正常数组，如果不成功，直接拆解字符串备用方案！
+        filenames = data.get("filenames", [])
         files_str = data.get("files", "")
-        if not files_str:
-            return jsonify({"success": False, "message": "未能收到文件"})
+        if files_str and not filenames:
+            filenames = [f.strip() for f in files_str.split(",") if f.strip()]
 
-        filenames = [f.strip() for f in files_str.split(",") if f.strip()]
+        if not filenames:
+            return jsonify({"success": False, "message": "后端未能提取到要删除的文件列表"})
+
         count = 0
         for f in filenames:
             safe_f = os.path.basename(f)
@@ -131,7 +137,7 @@ class OmniDrawPlugin(Star):
                 try:
                     os.remove(path)
                     count += 1
-                except Exception:
+                except Exception as e:
                     pass
                     
         return jsonify({"success": True, "count": count})
