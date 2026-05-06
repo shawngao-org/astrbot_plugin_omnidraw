@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 PLUGIN_NAME = "astrbot_plugin_omnidraw"
 PLUGIN_AUTHOR = "雪碧bir"
-PLUGIN_VERSION = "3.3.1"
+PLUGIN_VERSION = "3.3.2"
 
 
 @dataclass
@@ -379,6 +379,8 @@ def _process_persona_images(raw_images: Any, refs_dir: str, cleanup: bool = True
         if not img_data:
             continue
         img_ref = str(img_data)
+        if _is_page_preview_ref(img_ref):
+            continue
         if img_ref.startswith("data:image"):
             saved_path = _save_data_url_image(img_ref, refs_dir, idx)
             if saved_path:
@@ -389,6 +391,10 @@ def _process_persona_images(raw_images: Any, refs_dir: str, cleanup: bool = True
     if cleanup:
         _cleanup_unused_persona_refs(refs_dir, processed_images)
     return processed_images
+
+
+def _is_page_preview_ref(image_ref: str) -> bool:
+    return "astrbot_plugin_omnidraw/get_image" in str(image_ref)
 
 
 def _save_data_url_image(data_url: str, refs_dir: str, idx: int) -> str:

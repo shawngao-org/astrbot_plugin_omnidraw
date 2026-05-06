@@ -12,6 +12,7 @@ import mimetypes
 import os
 import re
 import uuid
+from urllib.parse import parse_qs, urlparse
 from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional
 
 import aiohttp
@@ -48,6 +49,8 @@ from .core.prompt_optimizer import PromptOptimizer
 from .core.video_manager import VideoManager
 from .models import PLUGIN_AUTHOR, PLUGIN_NAME, PLUGIN_VERSION, PluginConfig
 from .utils import handle_errors
+
+PAGE_PREVIEW_IMAGE_BYTES = 80 * 1024 * 1024
 
 
 @register(PLUGIN_NAME, PLUGIN_AUTHOR, f"万象画卷 v{PLUGIN_VERSION}", PLUGIN_VERSION)
@@ -139,22 +142,38 @@ class OmniDrawPlugin(Star):
                 raw_profile_images = profile.get("persona_ref_image", [])
                 if not isinstance(raw_profile_images, list):
                     raw_profile_images = [raw_profile_images] if raw_profile_images else []
-                profile["persona_ref_image"] = [self._image_ref_for_page(ref) for ref in raw_profile_images if ref]
+                profile["persona_ref_image"] = self._image_refs_for_page(raw_profile_images)
 
         raw_images = persona_config.get("persona_ref_image", [])
         if not isinstance(raw_images, list):
             raw_images = [raw_images] if raw_images else []
-        persona_config["persona_ref_image"] = [self._image_ref_for_page(ref) for ref in raw_images if ref]
+        persona_config["persona_ref_image"] = self._image_refs_for_page(raw_images)
         return page_config
+
+    def _image_refs_for_page(self, image_refs: Iterable[Any]) -> List[str]:
+        refs = []
+        for image_ref in image_refs:
+            if not image_ref:
+                continue
+            page_ref = self._image_ref_for_page(image_ref)
+            if page_ref:
+                refs.append(page_ref)
+        return refs
 
     def _image_ref_for_page(self, image_ref: str) -> str:
         image_ref = str(image_ref)
+        resolved_preview = self._resolve_page_image_ref(image_ref)
+        if resolved_preview:
+            image_ref = resolved_preview
+        elif self._is_page_image_preview_ref(image_ref):
+            return ""
+
         if image_ref.startswith(("http", "data:image")):
             return image_ref
         if not os.path.exists(image_ref):
             return image_ref
         try:
-            if os.path.getsize(image_ref) > MAX_IMAGE_BYTES:
+            if os.path.getsize(image_ref) > PAGE_PREVIEW_IMAGE_BYTES:
                 return self._local_image_preview_url(image_ref)
             mime_type = mimetypes.guess_type(image_ref)[0] or "image/png"
             with open(image_ref, "rb") as file:
@@ -168,6 +187,59 @@ class OmniDrawPlugin(Star):
         token = uuid.uuid5(uuid.NAMESPACE_URL, abs_path).hex
         self._page_image_tokens[token] = abs_path
         return f"/{PLUGIN_NAME}/get_image?token={token}"
+
+    def _is_page_image_preview_ref(self, image_ref: str) -> bool:
+        return f"{PLUGIN_NAME}/get_image" in str(image_ref)
+
+    def _extract_page_image_token(self, image_ref: str) -> str:
+        if not self._is_page_image_preview_ref(image_ref):
+            return ""
+        try:
+            parsed = urlparse(str(image_ref))
+            token = parse_qs(parsed.query).get("token", [""])[0]
+        except Exception:
+            token = ""
+        return str(token).strip()
+
+    def _resolve_page_image_ref(self, image_ref: str) -> str:
+        token = self._extract_page_image_token(image_ref)
+        if not token:
+            return ""
+        image_path = self._page_image_tokens.get(token, "")
+        return image_path if image_path and os.path.exists(image_path) else ""
+
+    def _normalize_saved_page_images(self, config: Dict[str, Any]) -> None:
+        persona_config = config.get("persona_config")
+        if not isinstance(persona_config, dict):
+            return
+
+        def normalize_refs(value: Any) -> List[str]:
+            if isinstance(value, list):
+                raw_refs = value
+            elif value:
+                raw_refs = [value]
+            else:
+                raw_refs = []
+
+            refs = []
+            for ref in raw_refs:
+                ref_str = str(ref or "")
+                if not ref_str:
+                    continue
+                if self._is_page_image_preview_ref(ref_str):
+                    resolved = self._resolve_page_image_ref(ref_str)
+                    if resolved:
+                        refs.append(resolved)
+                    continue
+                refs.append(ref_str)
+            return refs
+
+        persona_config["persona_ref_image"] = normalize_refs(persona_config.get("persona_ref_image", []))
+        profiles = persona_config.get("profiles", [])
+        if isinstance(profiles, list):
+            for profile in profiles:
+                if isinstance(profile, dict):
+                    profile["persona_ref_image"] = normalize_refs(profile.get("persona_ref_image", []))
 
     async def get_image_handler(self):
         token = str(request.args.get("token", "")).strip()
@@ -184,6 +256,7 @@ class OmniDrawPlugin(Star):
             return jsonify({"success": False, "message": "配置格式错误：请求体必须是 JSON 对象。"}), 400
 
         try:
+            self._normalize_saved_page_images(new_config)
             self._apply_runtime_config(new_config)
             self._persist_config()
             self._safe_update_context_config()
