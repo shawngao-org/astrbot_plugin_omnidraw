@@ -78,8 +78,8 @@ const bridge = window.AstrBotPluginPage || {
                 ? { success: true, stats: mockCacheStats }
                 : mockConfig
     )),
-    apiPost: async (_, payload) => {
-        console.info("[OmniDraw local preview] save_config", payload);
+    apiPost: async (name, payload) => {
+        console.info(`[OmniDraw local preview] ${name}`, payload);
         return { success: true, stats: mockCacheStats, cleanup: { deleted_count: 0, human_deleted_size: "0 B" } };
     }
 };
@@ -532,8 +532,6 @@ async function loadCacheStats(showToastOnSuccess = false) {
 }
 
 async function clearCache(btn) {
-    const confirmed = window.confirm("确定清理 temp_images 与 user_refs 中的图片缓存吗？人设参考图不会被清理。");
-    if (!confirmed) return;
     btn.disabled = true;
     const originalText = btn.textContent;
     btn.textContent = "清理中...";
