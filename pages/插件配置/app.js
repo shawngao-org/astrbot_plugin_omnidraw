@@ -13,7 +13,7 @@ const defaultCacheConfig = {
 };
 
 const mockConfig = {
-    permission_config: { allowed_users: "", blocked_users: "", unlimited_groups: "" },
+    permission_config: { usable_users: "", allowed_users: "", blocked_users: "", unlimited_groups: "" },
     usage_config: {
         enable_daily_limit: false,
         daily_image_limit: 20,
@@ -87,7 +87,7 @@ const bridge = window.AstrBotPluginPage || {
 };
 
 let state = {
-    permission_config: { allowed_users: "", blocked_users: "", unlimited_groups: "" },
+    permission_config: { usable_users: "", allowed_users: "", blocked_users: "", unlimited_groups: "" },
     usage_config: {
         enable_daily_limit: false,
         daily_image_limit: 20,
@@ -193,6 +193,7 @@ function mergeIdText(...values) {
 
 function normalizePermissionConfig(value = {}) {
     return {
+        usable_users: mergeIdText(value.usable_users, value.access_users, value.use_whitelist),
         allowed_users: mergeIdText(value.allowed_users, value.unlimited_users, value.user_whitelist),
         blocked_users: mergeIdText(value.blocked_users, value.user_blacklist),
         unlimited_groups: mergeIdText(value.unlimited_groups, value.group_whitelist)
@@ -450,8 +451,10 @@ function updateMetrics() {
 function usageAccessLabel(level) {
     return ({
         limited: "受限",
+        usable_user: "可使用白名单",
         unlimited_user: "用户白名单",
         unlimited_group: "群白名单",
+        not_usable_user: "未在可使用白名单",
         blocked_user: "黑名单"
     }[level] || "受限");
 }
@@ -880,6 +883,7 @@ function renderProviderCard(p, i, isVideo) {
 }
 
 function bindBasicFields() {
+    byId("perm_usable_users").value = state.permission_config.usable_users || "";
     byId("perm_allowed_users").value = state.permission_config.allowed_users || "";
     byId("perm_blocked_users").value = state.permission_config.blocked_users || "";
     byId("perm_unlimited_groups").value = state.permission_config.unlimited_groups || "";
@@ -911,6 +915,7 @@ function bindBasicFields() {
 }
 
 function readBasicFields() {
+    state.permission_config.usable_users = normalizeIdText(byId("perm_usable_users").value);
     state.permission_config.allowed_users = normalizeIdText(byId("perm_allowed_users").value);
     state.permission_config.blocked_users = normalizeIdText(byId("perm_blocked_users").value);
     state.permission_config.unlimited_groups = normalizeIdText(byId("perm_unlimited_groups").value);

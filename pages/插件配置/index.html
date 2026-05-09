@@ -78,10 +78,14 @@
                         <div class="card-header">
                             <div>
                                 <h3>访问控制</h3>
-                                <p>黑名单优先；白名单与群白名单不限次数，其余用户默认可用并受每日额度约束。</p>
+                                <p>黑名单优先；可使用人员白名单会直接限制谁能用；用户白名单与群白名单只负责不限次数。</p>
                             </div>
                         </div>
                         <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="perm_usable_users">可使用人员白名单（仅这些人能用）</label>
+                                <textarea id="perm_usable_users" rows="4" class="input-modern" placeholder="10001&#10;10002"></textarea>
+                            </div>
                             <div class="form-group full-width">
                                 <label for="perm_allowed_users">用户白名单（不限次数）</label>
                                 <textarea id="perm_allowed_users" rows="4" class="input-modern" placeholder="10001&#10;10002"></textarea>
@@ -440,6 +444,6 @@
     </div>
 
     <div id="toast-container" aria-live="polite"></div>
-    <script type="module" src="./app.js?v=3.3.10"></script>
+    <script type="module" src="./app.js?v=3.3.11"></script>
 </body>
 </html>

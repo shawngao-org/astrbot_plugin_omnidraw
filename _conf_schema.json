@@ -2,12 +2,18 @@
   "permission_config": {
     "description": "权限与额度豁免",
     "type": "object",
-    "hint": "旧版“允许使用的 QQ 号”已合并为用户白名单。黑名单优先级最高；用户白名单与群组白名单不受每日限额限制；其余用户默认可用并按用量限制统计。",
+    "hint": "黑名单优先级最高；可使用人员白名单填写后，仅名单内用户可用；用户白名单与群组白名单只豁免每日限额。",
     "items": {
+      "usable_users": {
+        "description": "可使用人员白名单（限制谁能使用）",
+        "type": "text",
+        "hint": "留空表示不启用，所有未被黑名单拦截的用户默认可用；填写后只有名单内用户可以调用指令和 LLM 工具。可按行、英文逗号或空格分隔。",
+        "default": ""
+      },
       "allowed_users": {
         "description": "用户白名单（不限次数）",
         "type": "text",
-        "hint": "填写 AstrBot 识别到的用户 ID / QQ 号，可按行、英文逗号或空格分隔。旧版 allowed_users 会自动迁移到这里。",
+        "hint": "这里仅表示不限每日次数，不负责限制谁能使用。填写 AstrBot 识别到的用户 ID / QQ 号，可按行、英文逗号或空格分隔。",
         "default": ""
       },
       "blocked_users": {

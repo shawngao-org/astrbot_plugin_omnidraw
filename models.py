@@ -18,7 +18,7 @@ from .constants import (
 
 PLUGIN_NAME = "astrbot_plugin_omnidraw"
 PLUGIN_AUTHOR = "雪碧bir"
-PLUGIN_VERSION = "3.3.10"
+PLUGIN_VERSION = "3.3.11"
 DEFAULT_CACHE_CLEANUP_INTERVAL_HOURS = 24
 DEFAULT_MAX_CACHE_SIZE_MB = 512
 
@@ -70,6 +70,7 @@ class PluginConfig:
     persona_ref_images: List[str]
     active_persona_id: str
     personas: List[PersonaProfile]
+    usable_users: List[str]
     allowed_users: List[str]
     unlimited_users: List[str]
     blocked_users: List[str]
@@ -150,6 +151,11 @@ class PluginConfig:
         optimizer_model = str(opt_conf.get("optimizer_model", "")).strip()
         if not optimizer_model and providers:
             optimizer_model = providers[0].model
+        usable_users = _merge_unique_values(
+            perm_conf.get("usable_users", ""),
+            perm_conf.get("access_users", ""),
+            perm_conf.get("use_whitelist", ""),
+        )
         user_whitelist = _merge_unique_values(
             perm_conf.get("allowed_users", ""),
             perm_conf.get("unlimited_users", ""),
@@ -163,6 +169,7 @@ class PluginConfig:
             perm_conf.get("unlimited_groups", ""),
             perm_conf.get("group_whitelist", ""),
         )
+        perm_conf["usable_users"] = "\n".join(usable_users)
         perm_conf["allowed_users"] = "\n".join(user_whitelist)
         perm_conf["blocked_users"] = "\n".join(blocked_users)
         perm_conf["unlimited_groups"] = "\n".join(unlimited_groups)
@@ -233,6 +240,7 @@ class PluginConfig:
             persona_ref_images=list(active_persona.ref_images),
             active_persona_id=active_persona.id,
             personas=personas,
+            usable_users=usable_users,
             allowed_users=user_whitelist,
             unlimited_users=list(user_whitelist),
             blocked_users=blocked_users,

@@ -407,7 +407,18 @@ class OmniDrawPlugin(Star):
 
         permission_config = config.get("permission_config")
         if isinstance(permission_config, dict):
-            for key in ("allowed_users", "unlimited_users", "user_whitelist", "blocked_users", "user_blacklist", "unlimited_groups", "group_whitelist"):
+            for key in (
+                "usable_users",
+                "access_users",
+                "use_whitelist",
+                "allowed_users",
+                "unlimited_users",
+                "user_whitelist",
+                "blocked_users",
+                "user_blacklist",
+                "unlimited_groups",
+                "group_whitelist",
+            ):
                 if str(permission_config.get(key, "")).strip():
                     return True
 
@@ -1288,6 +1299,7 @@ class OmniDrawPlugin(Star):
 
         user_id = self._get_event_user_id(event)
         group_id = self._get_event_group_id(event)
+        usable_users = self._config_id_set(getattr(self.plugin_config, "usable_users", []))
         blocked_users = self._config_id_set(getattr(self.plugin_config, "blocked_users", []))
         unlimited_users = self._config_id_set(getattr(self.plugin_config, "unlimited_users", []))
         if not unlimited_users:
@@ -1305,6 +1317,11 @@ class OmniDrawPlugin(Star):
         if user_id in blocked_users:
             status.update({"allowed": False, "level": "blocked_user", "reason": "用户黑名单"})
             return status
+        if usable_users and user_id not in usable_users:
+            status.update({"allowed": False, "level": "not_usable_user", "reason": "可使用人员白名单"})
+            return status
+        if usable_users:
+            status.update({"level": "usable_user", "reason": "可使用人员白名单"})
         if user_id in unlimited_users:
             status.update({"unlimited": True, "level": "unlimited_user", "reason": "用户白名单"})
             return status
@@ -1317,6 +1334,8 @@ class OmniDrawPlugin(Star):
         status = self._access_status(event)
         if status.get("allowed", True):
             return ""
+        if status.get("level") == "not_usable_user":
+            return f"{MessageEmoji.WARNING} 当前仅允许可使用人员白名单内用户使用万象画卷。"
         return f"{MessageEmoji.WARNING} 你已被加入用户黑名单，无法使用万象画卷。"
 
     def _daily_image_limit(self) -> int:
