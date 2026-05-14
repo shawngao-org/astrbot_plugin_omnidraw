@@ -60,14 +60,15 @@ https://github.com/diaomin66/astrbot_plugin_omnidraw/
 
 最少需要配置一个画图 Provider。常见字段含义如下：
 
-| 字段 | 怎么填 |
-| :--- | :--- |
-| 节点 ID | 自己取一个好记的名字，比如 `image_node_1` |
-| API 类型 | 按你的接口选择，常见是 `openai_chat` 或 `openai_image` |
-| Base URL | 中转站或官方接口地址，例如 `https://example.com/v1` |
-| API Keys | 填你的 key，多个 key 可按页面提示添加 |
-| 模型 | 填模型名，例如 `gpt-image-1`、`gemini-xxx-image` 等 |
-| Timeout | 建议画图 120-300，视频 300 或更高 |
+| 字段 | 怎么填                                                       |
+| :--- |:----------------------------------------------------------|
+| 节点 ID | 自己取一个好记的名字，比如 `image_node_1`                              |
+| API 类型 | 按你的接口选择，常见是 `openai_chat` 或 `openai_image` 或 `modelscope` |
+| Base URL | 中转站或官方接口地址，例如 `https://example.com/v1`                    |
+| API Keys | 填你的 key，多个 key 可按页面提示添加                                   |
+| 模型 | 填模型名，例如 `gpt-image-1`、`gemini-xxx-image` 等                |
+| Timeout | 建议画图 120-300，视频 300 或更高                                   |
+| 自定义请求头 | 填写提供商要求的特殊请求标头，例如: `X-ModelScope-Async-Mode: true`、`X-ModelScope-Task-Type: image_generation`       |
 
 然后在“路由 / 链路”里把：
 
