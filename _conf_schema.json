@@ -173,9 +173,10 @@
             "type": "string",
             "options": [
               "openai_image",
-              "openai_chat"
+              "openai_chat",
+              "modelscope"
             ],
-            "hint": "openai_image 适合标准图片接口；openai_chat 适合通过 chat/completions 透传生图的中转站。",
+            "hint": "openai_image 适合标准图片接口；openai_chat 适合通过 chat/completions 透传生图；modelscope 适合魔搭社区返回任务 ID 需要轮询的接口。",
             "default": "openai_image"
           },
           "base_url": {

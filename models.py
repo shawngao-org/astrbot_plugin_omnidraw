@@ -336,6 +336,8 @@ def _normalize_api_type(value: Any, is_video: bool) -> str:
         if "sync" in lowered or "同步" in raw:
             return "openai_sync"
         return "async_task"
+    if "modelscope" in lowered or "魔搭" in raw:
+        return "modelscope"
     if "chat" in lowered or "对话" in raw:
         return "openai_chat"
     return "openai_image"

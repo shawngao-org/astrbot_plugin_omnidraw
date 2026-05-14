@@ -833,7 +833,8 @@ function renderProviderCard(p, i, isVideo) {
         ]
         : [
             ["openai_image", "标准生图"],
-            ["openai_chat", "对话透传"]
+            ["openai_chat", "对话透传"],
+            ["modelscope", "魔搭 (ModelScope)"]
         ];
 
     const modeChips = modes.map(([value, label]) => {

@@ -84,6 +84,17 @@ def build_video_generations_endpoint(base_url: str) -> str:
     return f"{base_url}/videos/generations"
 
 
+def build_tasks_endpoint(base_url: str) -> str:
+    base_url = normalize_base_url(base_url)
+    if not base_url:
+        return ""
+    if _has_endpoint_path(base_url, ["/tasks"]):
+        return base_url
+
+    root = strip_known_endpoint_path(base_url)
+    return f"{root}/tasks" if root.endswith("/v1") or root.endswith("/v2") else f"{root}/v1/tasks"
+
+
 def next_api_key(provider_id: str, api_keys: List[str]) -> str:
     keys = [str(key).strip() for key in api_keys if str(key).strip()]
     if not provider_id or not keys:
