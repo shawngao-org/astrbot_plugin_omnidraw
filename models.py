@@ -31,6 +31,7 @@ class ProviderConfig:
     model: str
     timeout: float
     available_models: List[str] = field(default_factory=list)
+    custom_headers: Dict[str, str] = field(default_factory=dict)
 
     @property
     def has_api_key(self) -> bool:
@@ -358,6 +359,18 @@ def _build_provider_config(raw_provider: Any, is_video: bool) -> ProviderConfig:
         available_models.insert(0, model)
 
     default_timeout = 300.0 if is_video else 60.0
+    
+    custom_headers = {}
+    raw_headers = raw_provider.get("custom_headers", "")
+    if isinstance(raw_headers, dict):
+        custom_headers = {str(k): str(v) for k, v in raw_headers.items()}
+    elif isinstance(raw_headers, str) and raw_headers.strip():
+        for line in raw_headers.split("\n"):
+            line = line.strip()
+            if ":" in line:
+                k, v = line.split(":", 1)
+                custom_headers[k.strip()] = v.strip()
+
     return ProviderConfig(
         id=str(raw_provider.get("id", raw_provider.get("节点ID", ""))).strip(),
         api_type=_normalize_api_type(raw_provider.get("api_type", raw_provider.get("接口模式", "")), is_video),
@@ -371,6 +384,7 @@ def _build_provider_config(raw_provider: Any, is_video: bool) -> ProviderConfig:
         model=model,
         timeout=_to_float(raw_provider.get("timeout", raw_provider.get("超时时间(秒)", default_timeout)), default_timeout, 1.0),
         available_models=available_models,
+        custom_headers=custom_headers,
     )
 
 

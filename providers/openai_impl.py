@@ -87,7 +87,8 @@ class OpenAIProvider(BaseProvider):
                 payload.update(api_kwargs)
                 log_payload = {k: v for k, v in payload.items() if not str(k).startswith("image")}
                 logger.info(f"📤 [标准通道] 附带高级参数的请求体:\n{json.dumps(log_payload, ensure_ascii=False)}")
-                headers = {"Content-Type": "application/json", "Authorization": "Bearer " + current_key}
+                headers = self._prepare_headers(current_key)
+                headers["Content-Type"] = "application/json"
                 timeout_obj = aiohttp.ClientTimeout(total=self.config.timeout)
                 async with self.session.post(url, json=payload, headers=headers, timeout=timeout_obj) as response:
                     return await self._parse_response(response, base_url)
@@ -113,7 +114,7 @@ class OpenAIProvider(BaseProvider):
             for k, v in api_kwargs.items():
                 data.add_field(k, str(v))
 
-            headers = {"Authorization": "Bearer " + current_key}
+            headers = self._prepare_headers(current_key)
             timeout_obj = aiohttp.ClientTimeout(total=self.config.timeout)
             async with self.session.post(url, data=data, headers=headers, timeout=timeout_obj) as response:
                 return await self._parse_response(response, base_url)
@@ -134,7 +135,8 @@ class OpenAIProvider(BaseProvider):
 
             logger.info(f"📤 [标准通道] 附带高级参数的请求体:\n{json.dumps(payload, ensure_ascii=False)}")
 
-            headers = {"Content-Type": "application/json", "Authorization": "Bearer " + current_key}
+            headers = self._prepare_headers(current_key)
+            headers["Content-Type"] = "application/json"
 
             timeout_obj = aiohttp.ClientTimeout(total=self.config.timeout)
             async with self.session.post(url, json=payload, headers=headers, timeout=timeout_obj) as response:

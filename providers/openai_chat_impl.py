@@ -99,10 +99,8 @@ class OpenAIChatProvider(BaseProvider):
             payload.update(api_kwargs)
             logger.info(f"📤 [Chat/Vision通道] 触发高级参数透传:\n{json.dumps(api_kwargs, ensure_ascii=False)}")
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + current_key
-        }
+        headers = self._prepare_headers(current_key)
+        headers["Content-Type"] = "application/json"
         
         url = build_chat_completions_endpoint(self.config.base_url)
         

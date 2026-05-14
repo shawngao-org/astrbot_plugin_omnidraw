@@ -28,6 +28,8 @@ class PromptOptimizer:
         if not endpoint or not api_key:
             return [raw_action] * count
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        if provider.custom_headers:
+            headers.update(provider.custom_headers)
 
         # ==========================================
         # 🚀 动态风格插槽系统 (Dynamic Style Engine)

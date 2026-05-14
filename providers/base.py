@@ -131,6 +131,16 @@ class BaseProvider(ABC):
     def get_current_key(self) -> str:
         return next_api_key(self.config.id, self._api_keys)
 
+    def _prepare_headers(self, api_key: Optional[str] = None) -> Dict[str, str]:
+        headers = {}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        if self.config.custom_headers:
+            headers.update(self.config.custom_headers)
+            
+        return headers
+
     def encode_local_image_to_base64(self, image_path: str) -> Optional[str]:
         """将本地图片文件转为 API 兼容的 Base64 字符串"""
         if not image_path or not os.path.exists(image_path):

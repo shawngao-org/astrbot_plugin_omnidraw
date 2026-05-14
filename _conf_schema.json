@@ -207,6 +207,12 @@
             "type": "float",
             "hint": "图片建议 120-300；较慢接口可调高。",
             "default": 60
+          },
+          "custom_headers": {
+            "description": "自定义请求头",
+            "type": "text",
+            "hint": "每行一个请求头，格式为 Key: Value。用于透传特定鉴权、代理或识别字段。",
+            "default": ""
           }
         }
       }
@@ -267,6 +273,12 @@
             "type": "float",
             "hint": "视频生成通常较慢，建议 300 或更高。",
             "default": 300
+          },
+          "custom_headers": {
+            "description": "自定义请求头",
+            "type": "text",
+            "hint": "每行一个请求头，格式为 Key: Value。同样适用于视频任务的轮询过程。",
+            "default": ""
           }
         }
       }

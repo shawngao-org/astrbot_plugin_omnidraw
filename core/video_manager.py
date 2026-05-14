@@ -93,6 +93,9 @@ class VideoManager:
             "Authorization": f"Bearer {self._get_api_key(provider)}",
             "Content-Type": "application/json",
         }
+        if provider.custom_headers:
+            headers.update(provider.custom_headers)
+            
         max_retries = max(1, int(provider.timeout) // 10)
 
         for attempt in range(max_retries):
@@ -155,6 +158,9 @@ class VideoManager:
             "Authorization": f"Bearer {self._get_api_key(provider)}",
             "Content-Type": "application/json",
         }
+        if provider.custom_headers:
+            headers.update(provider.custom_headers)
+            
         base_url = provider.base_url.rstrip("/")
         api_type = str(provider.api_type).strip()
         endpoint = build_video_generations_endpoint(base_url)
